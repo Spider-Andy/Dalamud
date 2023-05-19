@@ -698,6 +698,13 @@ internal class InterfaceManager : IDisposable, IServiceType
                 fontPathKr = null;
             Log.Verbose("[FONT] fontPathKr = {0}", fontPathKr);
 
+            var fontPathSc = Path.Combine(dalamud.AssetDirectory.FullName, "UIRes", "NotoSansCJKsc-Regular.otf");
+            if (!File.Exists(fontPathSc))
+                fontPathSc = Path.Combine(dalamud.AssetDirectory.FullName, "UIRes", "NotoSansCJKsc-Medium.otf");
+            if (!File.Exists(fontPathSc))
+                ShowFontError(fontPathSc);
+            Log.Verbose("[FONT] fontPathSc = {0}", fontPathSc);
+
             // Default font
             Log.Verbose("[FONT] SetupFonts - Default font");
             var fontInfo = new TargetFontModification(
@@ -712,6 +719,16 @@ internal class InterfaceManager : IDisposable, IServiceType
                 fontConfig.GlyphRanges = dummyRangeHandle.AddrOfPinnedObject();
                 fontConfig.PixelSnapH = false;
                 DefaultFont = ioFonts.AddFontDefault(fontConfig);
+                this.loadedFontInfo[DefaultFont] = fontInfo;
+            }
+            else if (fontPathSc != null && Service<DalamudConfiguration>.Get().EffectiveLanguage == "zh")
+            {
+                var chineseRangeHandle = GCHandle.Alloc(GlyphRangesChinese.GlyphRanges, GCHandleType.Pinned);
+                garbageList.Add(chineseRangeHandle);
+
+                fontConfig.GlyphRanges = chineseRangeHandle.AddrOfPinnedObject();
+                fontConfig.PixelSnapH = true;
+                DefaultFont = ioFonts.AddFontFromFileTTF(fontPathSc, fontConfig.SizePixels, fontConfig);
                 this.loadedFontInfo[DefaultFont] = fontInfo;
             }
             else
@@ -731,6 +748,15 @@ internal class InterfaceManager : IDisposable, IServiceType
                 fontConfig.GlyphRanges = ioFonts.GetGlyphRangesKorean();
                 fontConfig.PixelSnapH = true;
                 ioFonts.AddFontFromFileTTF(fontPathKr, fontConfig.SizePixels, fontConfig);
+                fontConfig.MergeMode = false;
+            }
+
+            if (fontPathSc != null && Service<DalamudConfiguration>.Get().EffectiveLanguage == "zh")
+            {
+                fontConfig.MergeMode = true;
+                fontConfig.GlyphRanges = ioFonts.GetGlyphRangesChineseSimplifiedCommon();
+                fontConfig.PixelSnapH = true;
+                ioFonts.AddFontFromFileTTF(fontPathSc, fontConfig.SizePixels, fontConfig);
                 fontConfig.MergeMode = false;
             }
 
