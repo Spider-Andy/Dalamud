@@ -71,16 +71,23 @@ int InitializeClrAndGetEntryPoint(
     }
     else
     {
-        result = SHGetKnownFolderPath(FOLDERID_RoamingAppData, KF_FLAG_DEFAULT, nullptr, &_appdata);
-
-        if (result != 0)
-        {
-            logging::E("Unable to get RoamingAppData path (err={})", result);
-            return result;
+        size_t begin_position = module_path.find(L"XIVLauncher");
+        if (begin_position != -1) {
+            std::filesystem::path fs_app_data(module_path.substr(0, begin_position).c_str());
+            dotnet_path = _wcsdup(fs_app_data.append("XIVLauncher").append("runtime").c_str());
         }
+        else {
+            result = SHGetKnownFolderPath(FOLDERID_RoamingAppData, KF_FLAG_DEFAULT, nullptr, &_appdata);
 
-        std::filesystem::path fs_app_data(_appdata);
-        dotnet_path = _wcsdup(fs_app_data.append("XIVLauncher").append("runtime").c_str());
+            if (result != 0)
+            {
+                logging::E("Unable to get RoamingAppData path (err={})", result);
+                return result;
+            }
+
+            std::filesystem::path fs_app_data(_appdata);
+            dotnet_path = _wcsdup(fs_app_data.append("XIVLauncher").append("runtime").c_str());
+        }
     }
 
     // =========================================================================== //
